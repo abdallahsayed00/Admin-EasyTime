@@ -747,27 +747,8 @@
             </div>
 
             <!-- دليل إصلاح الصلاحيات -->
-            <div class="permission-guide">
-                <h4><i class="fas fa-exclamation-triangle"></i> إصلاح مشكلة الصلاحيات</h4>
-                <p>إذا ظهرت رسالة "ليس لديك صلاحيات"، اتبع هذه الخطوات:</p>
-                <ol>
-                    <li>اذهب إلى <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--primary-color);">Firebase Console</a></li>
-                    <li>اختر مشروع "easy-smart-time"</li>
-                    <li>اذهب إلى Firestore Database → Rules</li>
-                    <li>استبدل القواعد الحالية بما يلي:</li>
-                </ol>
-                <div class="code-block">
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-                </div>
-                <li>انقر "Publish" لحفظ التغييرات</li>
-            </div>
+            
+                
 
             <form id="adminLoginForm">
                 <div class="form-group">
@@ -2415,4 +2396,5 @@ service cloud.firestore {
         window.togglePasswordVisibility = togglePasswordVisibility;
     </script>
 </body>
+
 </html>
