@@ -1,0 +1,2418 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إدارة Easy TimeTable</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #8A2BE2;
+            --primary-light: #9370DB;
+            --primary-dark: #6A0DAD;
+            --secondary-color: #FF6B6B;
+            --accent-color: #4ECDC4;
+            --white: #FFFFFF;
+            --gray-light: #F8F9FA;
+            --gray: #E9ECEF;
+            --gray-dark: #343A40;
+            --success: #51CF66;
+            --warning: #FCC419;
+            --danger: #FF6B6B;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --bg-color: #FFFFFF;
+            --text-color: #343A40;
+            --card-bg: #FFFFFF;
+            --border-color: #E9ECEF;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #FFFFFF;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --gray-light: #2d2d2d;
+            --gray: #404040;
+            --gray-dark: #e9ecef;
+            --white: #2d2d2d;
+            --shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Cairo', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* صفحة المصادقة */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+            padding: 20px;
+        }
+
+        .auth-form {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .auth-form h2 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        .default-credentials {
+            background: var(--gray-light);
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border-right: 4px solid var(--primary-color);
+        }
+
+        .default-credentials h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .credential-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+
+        .credential-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .credential-value {
+            color: var(--primary-dark);
+            font-family: monospace;
+            background: rgba(138, 43, 226, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.1);
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-light);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--gray);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* لوحة الإدارة */
+        .admin-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-size: 1.8rem;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .admin-nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+        }
+
+        .admin-nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .admin-nav-links li {
+            margin: 0;
+        }
+
+        .admin-nav-links a {
+            display: block;
+            padding: 15px 20px;
+            color: var(--text-color);
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .admin-nav-links a.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: rgba(138, 43, 226, 0.05);
+        }
+
+        .admin-content {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .admin-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-header h3 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: auto;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--gray);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+            color: var(--white);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* الجداول */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: var(--gray-light);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(81, 207, 102, 0.2);
+            color: var(--success);
+        }
+
+        .status-inactive {
+            background: rgba(252, 196, 25, 0.2);
+            color: var(--warning);
+        }
+
+        .status-banned {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--danger);
+        }
+
+        /* النماذج المنبثقة */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            color: var(--primary-color);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* الإشعارات */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 1001;
+            animation: slideInRight 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification.warning {
+            background: var(--warning);
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        /* البحث والتصفية */
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .filter-select {
+            width: 200px;
+        }
+
+        /* التصميم المتجاوب */
+        @media (max-width: 768px) {
+            .admin-nav-links {
+                flex-direction: column;
+            }
+            
+            .admin-nav-links a {
+                border-bottom: none;
+                border-right: 3px solid transparent;
+            }
+            
+            .admin-nav-links a.active {
+                border-right-color: var(--primary-color);
+                border-bottom-color: transparent;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .search-filter {
+                flex-direction: column;
+            }
+            
+            .search-box, .filter-select {
+                width: 100%;
+            }
+            
+            .data-table {
+                font-size: 0.8rem;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 10px 5px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .auth-form {
+                padding: 20px;
+            }
+            
+            .admin-content {
+                padding: 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+
+        .permission-guide {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid var(--danger);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 20px 0;
+            text-align: right;
+        }
+
+        .permission-guide h4 {
+            color: var(--danger);
+            margin-bottom: 10px;
+        }
+
+        .permission-guide ol {
+            text-align: right;
+            margin-right: 20px;
+        }
+
+        .permission-guide li {
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: var(--gray-dark);
+            color: var(--white);
+            padding: 15px;
+            border-radius: var(--radius);
+            font-family: monospace;
+            text-align: left;
+            direction: ltr;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .data-actions .btn {
+            width: auto;
+        }
+
+        .view-password {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- صفحة مصادقة الإدارة -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-form">
+            <h2>دخول لوحة الإدارة</h2>
+            
+            <!-- عرض بيانات الدخول الافتراضية -->
+            <div class="default-credentials">
+                <h4><i class="fas fa-key"></i> بيانات الدخول الافتراضية</h4>
+                <div class="credential-item">
+                    <span class="credential-label">البريد الإلكتروني:</span>
+                    <span class="credential-value">admin@easytimetable.com</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">كلمة المرور:</span>
+                    <span class="credential-value">Admin123!</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">معرف المشروع:</span>
+                    <span class="credential-value">easy-smart-time</span>
+                </div>
+            </div>
+
+            <!-- دليل إصلاح الصلاحيات -->
+            <div class="permission-guide">
+                <h4><i class="fas fa-exclamation-triangle"></i> إصلاح مشكلة الصلاحيات</h4>
+                <p>إذا ظهرت رسالة "ليس لديك صلاحيات"، اتبع هذه الخطوات:</p>
+                <ol>
+                    <li>اذهب إلى <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--primary-color);">Firebase Console</a></li>
+                    <li>اختر مشروع "easy-smart-time"</li>
+                    <li>اذهب إلى Firestore Database → Rules</li>
+                    <li>استبدل القواعد الحالية بما يلي:</li>
+                </ol>
+                <div class="code-block">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+                </div>
+                <li>انقر "Publish" لحفظ التغييرات</li>
+            </div>
+
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label for="adminEmail">البريد الإلكتروني</label>
+                    <input type="email" id="adminEmail" class="form-control" placeholder="admin@easytimetable.com" required value="admin@easytimetable.com">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">كلمة المرور</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="كلمة المرور" required value="Admin123!">
+                </div>
+                <div class="loading" id="adminLoginLoading">
+                    <div class="loading-spinner"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">دخول لوحة الإدارة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- لوحة الإدارة -->
+    <div class="admin-container" id="adminContainer">
+        <!-- رأس لوحة الإدارة -->
+        <header class="admin-header">
+            <h1>لوحة إدارة Easy TimeTable</h1>
+            <div class="admin-controls">
+                <span id="adminUserName">مسؤول النظام</span>
+                <button class="btn btn-secondary" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="btn btn-danger" onclick="adminLogout()">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+            </div>
+        </header>
+
+        <!-- شريط التنقل -->
+        <nav class="admin-nav">
+            <ul class="admin-nav-links">
+                <li><a href="#" class="active" data-section="dashboard">لوحة التحكم</a></li>
+                <li><a href="#" data-section="users">إدارة المستخدمين</a></li>
+                <li><a href="#" data-section="data">إدارة البيانات</a></li>
+                <li><a href="#" data-section="logs">سجلات النظام</a></li>
+                <li><a href="#" data-section="settings">الإعدادات</a></li>
+            </ul>
+        </nav>
+
+        <!-- محتوى لوحة الإدارة -->
+        <main class="admin-content">
+            <!-- قسم لوحة التحكم -->
+            <section class="admin-section active" id="dashboard">
+                <div class="section-header">
+                    <h2>لوحة التحكم</h2>
+                    <button class="btn btn-primary" onclick="refreshStats()">
+                        <i class="fas fa-sync-alt"></i> تحديث الإحصائيات
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalUsers">0</div>
+                        <div class="stat-label">إجمالي المستخدمين</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="activeUsers">0</div>
+                        <div class="stat-label">المستخدمين النشطين</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalTasks">0</div>
+                        <div class="stat-label">المهام المسجلة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubjects">0</div>
+                        <div class="stat-label">المواد الدراسية</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalExams">0</div>
+                        <div class="stat-label">الامتحانات المسجلة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="systemUptime">100%</div>
+                        <div class="stat-label">استقرار النظام</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>آخر المستخدمين المسجلين</h3>
+                        <button class="btn btn-primary" onclick="switchSection('users')">
+                            <i class="fas fa-users"></i> عرض جميع المستخدمين
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="recentUsersTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>المرحلة</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>آخر الأنشطة</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="recentActivitiesTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>النشاط</th>
+                                    <th>التاريخ</th>
+                                    <th>عنوان IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم إدارة المستخدمين -->
+            <section class="admin-section" id="users">
+                <div class="section-header">
+                    <h2>إدارة المستخدمين</h2>
+                    <button class="btn btn-primary" onclick="openAddUserModal()">
+                        <i class="fas fa-plus"></i> إضافة مستخدم جديد
+                    </button>
+                </div>
+
+                <div class="search-filter">
+                    <div class="search-box">
+                        <input type="text" id="userSearch" class="form-control" placeholder="بحث في المستخدمين...">
+                    </div>
+                    <div class="filter-select">
+                        <select id="userStatusFilter" class="form-control">
+                            <option value="">جميع الحالات</option>
+                            <option value="active">نشط</option>
+                            <option value="inactive">غير نشط</option>
+                            <option value="banned">محظور</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadUsers()">
+                        <i class="fas fa-filter"></i> تصفية
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>المرحلة</th>
+                                    <th>النقاط</th>
+                                    <th>المستوى</th>
+                                    <th>آخر دخول</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم إدارة البيانات -->
+            <section class="admin-section" id="data">
+                <div class="section-header">
+                    <h2>إدارة البيانات</h2>
+                    <div>
+                        <button class="btn btn-primary" onclick="exportAllData()">
+                            <i class="fas fa-download"></i> تصدير جميع البيانات
+                        </button>
+                        <button class="btn btn-warning" onclick="openBackupModal()">
+                            <i class="fas fa-database"></i> نسخ احتياطي
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalTasksData">0</div>
+                        <div class="stat-label">إجمالي المهام</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedTasksData">0</div>
+                        <div class="stat-label">المهام المكتملة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubjectsData">0</div>
+                        <div class="stat-label">المواد الدراسية</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalExamsData">0</div>
+                        <div class="stat-label">الامتحانات</div>
+                    </div>
+                </div>
+
+                <div class="data-actions">
+                    <button class="btn btn-primary" onclick="loadTasksData()">
+                        <i class="fas fa-tasks"></i> تحميل المهام
+                    </button>
+                    <button class="btn btn-primary" onclick="loadSubjectsData()">
+                        <i class="fas fa-book"></i> تحميل المواد
+                    </button>
+                    <button class="btn btn-primary" onclick="loadExamsData()">
+                        <i class="fas fa-file-alt"></i> تحميل الامتحانات
+                    </button>
+                    <button class="btn btn-danger" onclick="clearAllData()">
+                        <i class="fas fa-trash"></i> مسح جميع البيانات
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>بيانات المهام</h3>
+                        <button class="btn btn-primary" onclick="loadTasksData()">
+                            <i class="fas fa-sync-alt"></i> تحديث
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="tasksDataTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>عنوان المهمة</th>
+                                    <th>المادة</th>
+                                    <th>التاريخ</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>بيانات الجداول الدراسية</h3>
+                        <button class="btn btn-primary" onclick="loadSubjectsData()">
+                            <i class="fas fa-sync-alt"></i> تحديث
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="subjectsDataTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>اسم المادة</th>
+                                    <th>اليوم</th>
+                                    <th>الوقت</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>بيانات الامتحانات</h3>
+                        <button class="btn btn-primary" onclick="loadExamsData()">
+                            <i class="fas fa-sync-alt"></i> تحديث
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="examsDataTable">
+                            <thead>
+                                <tr>
+                                    <th>المستخدم</th>
+                                    <th>اسم الامتحان</th>
+                                    <th>المادة</th>
+                                    <th>التاريخ</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم سجلات النظام -->
+            <section class="admin-section" id="logs">
+                <div class="section-header">
+                    <h2>سجلات النظام</h2>
+                    <button class="btn btn-danger" onclick="clearOldLogs()">
+                        <i class="fas fa-trash"></i> مسح السجلات القديمة
+                    </button>
+                </div>
+
+                <div class="search-filter">
+                    <div class="search-box">
+                        <input type="text" id="logSearch" class="form-control" placeholder="بحث في السجلات...">
+                    </div>
+                    <div class="filter-select">
+                        <select id="logTypeFilter" class="form-control">
+                            <option value="">جميع الأنواع</option>
+                            <option value="login">تسجيل الدخول</option>
+                            <option value="logout">تسجيل الخروج</option>
+                            <option value="create">إنشاء</option>
+                            <option value="update">تحديث</option>
+                            <option value="delete">حذف</option>
+                            <option value="error">خطأ</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadLogs()">
+                        <i class="fas fa-filter"></i> تصفية
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table" id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>المستخدم</th>
+                                    <th>النوع</th>
+                                    <th>النشاط</th>
+                                    <th>عنوان IP</th>
+                                    <th>التفاصيل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">جاري تحميل البيانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم الإعدادات -->
+            <section class="admin-section" id="settings">
+                <div class="section-header">
+                    <h2>إعدادات النظام</h2>
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> حفظ الإعدادات
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إعدادات الأمان</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>مدة انتهاء جلسة المستخدم (بالدقائق)</label>
+                        <input type="number" id="sessionTimeout" class="form-control" value="60" min="15" max="1440">
+                    </div>
+                    <div class="form-group">
+                        <label>الحد الأقصى لمحاولات تسجيل الدخول الفاشلة</label>
+                        <input type="number" id="maxLoginAttempts" class="form-control" value="5" min="1" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="requireStrongPassword" checked> 
+                            اشتراط كلمة مرور قوية
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إعدادات الإشعارات</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="emailNotifications" checked> 
+                            إشعارات البريد الإلكتروني
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="systemAlerts" checked> 
+                            تنبيهات النظام
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="userActivityLogging" checked> 
+                            تسجيل أنشطة المستخدمين
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إعدادات النسخ الاحتياطي</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>تلقائي للنسخ الاحتياطي</label>
+                        <select id="backupFrequency" class="form-control">
+                            <option value="daily">يومي</option>
+                            <option value="weekly" selected>أسبوعي</option>
+                            <option value="monthly">شهري</option>
+                            <option value="never">لا</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>عدد النسخ المحفوظة</label>
+                        <input type="number" id="backupRetention" class="form-control" value="5" min="1" max="30">
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- نموذج إضافة/تعديل مستخدم -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">إضافة مستخدم جديد</h3>
+                <button class="close-modal" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">الاسم الكامل</label>
+                        <input type="text" id="userName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">البريد الإلكتروني</label>
+                        <input type="email" id="userEmail" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group password-field">
+                    <label for="userPassword">كلمة المرور</label>
+                    <input type="password" id="userPassword" class="form-control" minlength="6" required>
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('userPassword')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userGrade">المرحلة الدراسية</label>
+                        <select id="userGrade" class="form-control" required>
+                            <option value="">اختر المرحلة</option>
+                            <option value="grade1">الصف الأول الابتدائي</option>
+                            <option value="grade2">الصف الثاني الابتدائي</option>
+                            <option value="grade3">الصف الثالث الابتدائي</option>
+                            <option value="grade4">الصف الرابع الابتدائي</option>
+                            <option value="grade5">الصف الخامس الابتدائي</option>
+                            <option value="grade6">الصف السادس الابتدائي</option>
+                            <option value="grade7">الصف الأول الإعدادي</option>
+                            <option value="grade8">الصف الثاني الإعدادي</option>
+                            <option value="grade9">الصف الثالث الإعدادي</option>
+                            <option value="grade10">الصف الأول الثانوي</option>
+                            <option value="grade11">الصف الثاني الثانوي</option>
+                            <option value="grade12">الصف الثالث الثانوي</option>
+                            <option value="uni1">السنة الأولى جامعة</option>
+                            <option value="uni2">السنة الثانية جامعة</option>
+                            <option value="uni3">السنة الثالثة جامعة</option>
+                            <option value="uni4">السنة الرابعة جامعة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userStatus">حالة المستخدم</label>
+                        <select id="userStatus" class="form-control" required>
+                            <option value="active">نشط</option>
+                            <option value="inactive">غير نشط</option>
+                            <option value="banned">محظور</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userXP">النقاط</label>
+                        <input type="number" id="userXP" class="form-control" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="userLevel">المستوى</label>
+                        <input type="number" id="userLevel" class="form-control" min="1" value="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="userSubmitBtn">حفظ المستخدم</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نموذج النسخ الاحتياطي -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>النسخ الاحتياطي للنظام</h3>
+                <button class="close-modal" onclick="closeModal('backupModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>نوع النسخ الاحتياطي</label>
+                <select id="backupType" class="form-control">
+                    <option value="full">نسخ كامل</option>
+                    <option value="users">المستخدمين فقط</option>
+                    <option value="data">البيانات فقط</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>التشفير</label>
+                <select id="backupEncryption" class="form-control">
+                    <option value="none">بدون تشفير</option>
+                    <option value="aes128">AES-128</option>
+                    <option value="aes256">AES-256</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="includeLogs"> تضمين سجلات النظام
+                </label>
+            </div>
+            <button class="btn btn-primary" onclick="createBackup()">
+                <i class="fas fa-database"></i> إنشاء نسخة احتياطية
+            </button>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <h4>النسخ الاحتياطية السابقة</h4>
+                <div id="backupList">
+                    <p style="text-align: center;">لا توجد نسخ احتياطية</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نموذج عرض كلمة المرور -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>كلمة مرور المستخدم</h3>
+                <button class="close-modal" onclick="closeModal('passwordModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="text" id="passwordUserEmail" class="form-control" readonly>
+            </div>
+            <div class="form-group password-field">
+                <label>كلمة المرور</label>
+                <input type="password" id="passwordDisplay" class="form-control" readonly>
+                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('passwordDisplay')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <div class="form-group password-field">
+                <label>كلمة المرور الجديدة</label>
+                <input type="password" id="newPassword" class="form-control" placeholder="أدخل كلمة مرور جديدة">
+                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('newPassword')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <button class="btn btn-primary" onclick="updateUserPassword()">
+                <i class="fas fa-save"></i> تحديث كلمة المرور
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // نظام إدارة الأخطاء والصلاحيات
+        const AdminManager = {
+            // تهيئة Firebase
+            initFirebase: function() {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCgblJyZAKaGIpI9On-l3RFSn13SGKEPhM",
+                    authDomain: "easy-smart-time.firebaseapp.com",
+                    projectId: "easy-smart-time",
+                    storageBucket: "easy-smart-time.firebasestorage.app",
+                    messagingSenderId: "366822206103",
+                    appId: "1:366822206103:web:ba28da65323736207bd7d2",
+                    measurementId: "G-BBFTXPTENV"
+                };
+
+                try {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    this.auth = firebase.auth();
+                    this.db = firebase.firestore();
+                    this.initialized = true;
+                    console.log("✅ Firebase initialized successfully");
+                    return true;
+                } catch (error) {
+                    console.error("❌ Firebase initialization failed:", error);
+                    this.showNotification('خطأ في تهيئة النظام', 'error');
+                    return false;
+                }
+            },
+
+            // بيانات التطبيق
+            data: {
+                currentAdmin: null,
+                users: [],
+                tasks: [],
+                subjects: [],
+                exams: [],
+                logs: []
+            },
+
+            // إنشاء حساب المسؤول
+            createAdminAccount: async function() {
+                try {
+                    const adminEmail = "admin@easytimetable.com";
+                    const adminPassword = "Admin123!";
+                    
+                    console.log("🚀 محاولة إنشاء حساب المسؤول...");
+                    
+                    let userCredential;
+                    try {
+                        userCredential = await this.auth.createUserWithEmailAndPassword(adminEmail, adminPassword);
+                        console.log("✅ تم إنشاء الحساب في Authentication");
+                    } catch (authError) {
+                        if (authError.code === 'auth/email-already-in-use') {
+                            userCredential = await this.auth.signInWithEmailAndPassword(adminEmail, adminPassword);
+                            console.log("✅ تم تسجيل الدخول بالحساب الموجود");
+                        } else {
+                            throw authError;
+                        }
+                    }
+
+                    // حفظ بيانات المسؤول في Firestore
+                    try {
+                        await this.db.collection('users').doc(userCredential.user.uid).set({
+                            name: "مسؤول النظام",
+                            email: adminEmail,
+                            role: "admin",
+                            isAdmin: true,
+                            grade: "admin",
+                            xp: 0,
+                            level: 1,
+                            tasksCompleted: 0,
+                            subjectsCount: 0,
+                            examsCount: 0,
+                            joinDate: new Date().toISOString(),
+                            lastLogin: new Date().toISOString(),
+                            status: "active"
+                        }, { merge: true });
+                        console.log("✅ تم حفظ بيانات المسؤول في Firestore");
+                    } catch (firestoreError) {
+                        console.warn("⚠️ قد تكون هناك مشكلة في صلاحيات Firestore:", firestoreError);
+                    }
+
+                    return userCredential.user;
+                } catch (error) {
+                    console.error("❌ خطأ في إنشاء حساب المسؤول:", error);
+                    throw error;
+                }
+            },
+
+            // تسجيل الدخول
+            login: async function(email, password) {
+                const loading = document.getElementById('adminLoginLoading');
+                loading.style.display = 'block';
+
+                try {
+                    // محاولة تسجيل الدخول
+                    let userCredential;
+                    try {
+                        userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+                    } catch (loginError) {
+                        if (loginError.code === 'auth/user-not-found' || loginError.code === 'auth/invalid-login-credentials') {
+                            // إنشاء حساب جديد إذا لم يوجد
+                            userCredential = { user: await this.createAdminAccount() };
+                        } else {
+                            throw loginError;
+                        }
+                    }
+
+                    this.data.currentAdmin = userCredential.user;
+                    this.showAdminPanel();
+                    this.loadAdminData();
+                    this.showNotification('مرحباً بك في لوحة الإدارة!', 'success');
+
+                } catch (error) {
+                    console.error('❌ خطأ في تسجيل الدخول:', error);
+                    this.showNotification('خطأ في تسجيل الدخول: ' + this.getErrorMessage(error), 'error');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            },
+
+            // تحميل بيانات الإدارة
+            loadAdminData: async function() {
+                try {
+                    await this.refreshStats();
+                    await this.loadRecentUsers();
+                    await this.loadRecentActivities();
+                } catch (error) {
+                    console.error('Error loading admin data:', error);
+                }
+            },
+
+            // تحديث الإحصائيات
+            refreshStats: async function() {
+                try {
+                    // تحميل المستخدمين
+                    try {
+                        const usersSnapshot = await this.db.collection('users').get();
+                        const totalUsers = usersSnapshot.size;
+                        const activeUsers = usersSnapshot.docs.filter(doc => {
+                            const data = doc.data();
+                            return data.status === 'active';
+                        }).length;
+                        
+                        document.getElementById('totalUsers').textContent = totalUsers;
+                        document.getElementById('activeUsers').textContent = activeUsers;
+                        this.data.users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    } catch (error) {
+                        console.warn('⚠️ خطأ في تحميل المستخدمين:', error);
+                        document.getElementById('totalUsers').textContent = '0';
+                        document.getElementById('activeUsers').textContent = '0';
+                    }
+
+                    // تحميل المهام
+                    try {
+                        const tasksSnapshot = await this.db.collection('tasks').get();
+                        const totalTasks = tasksSnapshot.size;
+                        const completedTasks = tasksSnapshot.docs.filter(doc => doc.data().completed).length;
+                        
+                        document.getElementById('totalTasks').textContent = totalTasks;
+                        document.getElementById('totalTasksData').textContent = totalTasks;
+                        document.getElementById('completedTasksData').textContent = completedTasks;
+                        this.data.tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    } catch (error) {
+                        console.warn('⚠️ خطأ في تحميل المهام:', error);
+                        document.getElementById('totalTasks').textContent = '0';
+                        document.getElementById('totalTasksData').textContent = '0';
+                        document.getElementById('completedTasksData').textContent = '0';
+                    }
+
+                    // تحميل المواد
+                    try {
+                        const subjectsSnapshot = await this.db.collection('subjects').get();
+                        const totalSubjects = subjectsSnapshot.size;
+                        
+                        document.getElementById('totalSubjects').textContent = totalSubjects;
+                        document.getElementById('totalSubjectsData').textContent = totalSubjects;
+                        this.data.subjects = subjectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    } catch (error) {
+                        console.warn('⚠️ خطأ في تحميل المواد:', error);
+                        document.getElementById('totalSubjects').textContent = '0';
+                        document.getElementById('totalSubjectsData').textContent = '0';
+                    }
+
+                    // تحميل الامتحانات
+                    try {
+                        const examsSnapshot = await this.db.collection('exams').get();
+                        const totalExams = examsSnapshot.size;
+                        
+                        document.getElementById('totalExams').textContent = totalExams;
+                        document.getElementById('totalExamsData').textContent = totalExams;
+                        this.data.exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    } catch (error) {
+                        console.warn('⚠️ خطأ في تحميل الامتحانات:', error);
+                        document.getElementById('totalExams').textContent = '0';
+                        document.getElementById('totalExamsData').textContent = '0';
+                    }
+
+                } catch (error) {
+                    console.error('❌ خطأ عام في تحميل الإحصائيات:', error);
+                    this.showNotification('حدث خطأ في تحميل الإحصائيات', 'error');
+                }
+            },
+
+            // تحميل المستخدمين الجدد
+            loadRecentUsers: function() {
+                const users = this.data.users.slice(0, 5); // آخر 5 مستخدمين
+                this.displayUsersInTable(users, 'recentUsersTable');
+            },
+
+            // تحميل جميع المستخدمين
+            loadUsers: function() {
+                this.displayUsersInTable(this.data.users, 'usersTable');
+                this.showNotification('تم تحميل المستخدمين بنجاح', 'success');
+            },
+
+            // عرض المستخدمين في الجدول
+            displayUsersInTable: function(users, tableId) {
+                const tbody = document.getElementById(tableId).querySelector('tbody');
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="8" style="text-align: center;">لا توجد مستخدمين مسجلين</td>`;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                users.forEach(user => {
+                    const firstLetter = user.name ? user.name.charAt(0) : '?';
+                    const joinDate = user.joinDate ? new Date(user.joinDate).toLocaleDateString('ar-EG') : 'غير معروف';
+                    const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('ar-EG') : 'لم يسجل دخول';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="user-avatar">${firstLetter}</div>
+                                <div>
+                                    <div>${user.name || 'غير معروف'}</div>
+                                    ${tableId === 'usersTable' ? `<small style="color: var(--gray-dark);">${joinDate}</small>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${user.email}</td>
+                        <td>${this.getGradeText(user.grade)}</td>
+                        ${tableId === 'usersTable' ? `
+                            <td>${user.xp || 0}</td>
+                            <td>${user.level || 1}</td>
+                            <td>${lastLogin}</td>
+                        ` : `
+                            <td>${joinDate}</td>
+                        `}
+                        <td><span class="status-badge ${this.getStatusClass(user.status)}">${this.getStatusText(user.status)}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="AdminManager.editUser('${user.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="AdminManager.deleteUser('${user.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                ${tableId === 'usersTable' ? `
+                                <button class="btn btn-secondary btn-sm" onclick="AdminManager.showUserPassword('${user.id}')">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            },
+
+            // تحميل الأنشطة الحديثة
+            loadRecentActivities: function() {
+                // بيانات وهمية للعرض
+                const activities = [
+                    { userName: 'مسؤول النظام', activity: 'تسجيل الدخول', date: new Date().toLocaleString('ar-EG'), ip: '192.168.1.1' },
+                    // { userName: 'أحمد محمد', activity: 'إنشاء جدول جديد', date: new Date(Date.now() - 3600000).toLocaleString('ar-EG'), ip: '192.168.1.2' },
+                    // { userName: 'فاطمة علي', activity: 'إضافة مهمة جديدة', date: new Date(Date.now() - 7200000).toLocaleString('ar-EG'), ip: '192.168.1.3' }
+                ];
+
+                const tbody = document.getElementById('recentActivitiesTable').querySelector('tbody');
+                tbody.innerHTML = '';
+
+                activities.forEach(activity => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${activity.userName}</td>
+                        <td>${activity.activity}</td>
+                        <td>${activity.date}</td>
+                        <td>${activity.ip}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            },
+
+            // تحميل بيانات المهام
+            loadTasksData: async function() {
+                try {
+                    const tasksSnapshot = await this.db.collection('tasks').get();
+                    this.data.tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.displayTasksInTable(this.data.tasks);
+                    this.showNotification('تم تحميل بيانات المهام بنجاح', 'success');
+                } catch (error) {
+                    console.error('❌ خطأ في تحميل المهام:', error);
+                    this.showNotification('حدث خطأ في تحميل بيانات المهام', 'error');
+                }
+            },
+
+            // عرض المهام في الجدول
+            displayTasksInTable: function(tasks) {
+                const tbody = document.getElementById('tasksDataTable').querySelector('tbody');
+                tbody.innerHTML = '';
+
+                if (tasks.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="6" style="text-align: center;">لا توجد مهام مسجلة</td>`;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                tasks.forEach(task => {
+                    const taskDate = task.date ? new Date(task.date).toLocaleDateString('ar-EG') : 'غير محدد';
+                    const status = task.completed ? 'مكتملة' : 'قيد التنفيذ';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${this.getUserName(task.userId)}</td>
+                        <td>${task.title || 'بدون عنوان'}</td>
+                        <td>${task.subject || 'غير محدد'}</td>
+                        <td>${taskDate}</td>
+                        <td>${status}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="AdminManager.editTask('${task.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="AdminManager.deleteTask('${task.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            },
+
+            // تحميل بيانات المواد
+            loadSubjectsData: async function() {
+                try {
+                    const subjectsSnapshot = await this.db.collection('subjects').get();
+                    this.data.subjects = subjectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.displaySubjectsInTable(this.data.subjects);
+                    this.showNotification('تم تحميل بيانات المواد الدراسية بنجاح', 'success');
+                } catch (error) {
+                    console.error('❌ خطأ في تحميل المواد:', error);
+                    this.showNotification('حدث خطأ في تحميل بيانات المواد', 'error');
+                }
+            },
+
+            // عرض المواد في الجدول
+            displaySubjectsInTable: function(subjects) {
+                const tbody = document.getElementById('subjectsDataTable').querySelector('tbody');
+                tbody.innerHTML = '';
+
+                if (subjects.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="5" style="text-align: center;">لا توجد مواد دراسية مسجلة</td>`;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                subjects.forEach(subject => {
+                    const dayNames = {
+                        'sunday': 'الأحد',
+                        'monday': 'الإثنين', 
+                        'tuesday': 'الثلاثاء',
+                        'wednesday': 'الأربعاء',
+                        'thursday': 'الخميس'
+                    };
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${this.getUserName(subject.userId)}</td>
+                        <td>${subject.name || 'غير محدد'}</td>
+                        <td>${dayNames[subject.day] || subject.day || 'غير محدد'}</td>
+                        <td>${subject.time ? subject.time.replace('-', ':00-') + ':00' : 'غير محدد'}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="AdminManager.editSubject('${subject.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="AdminManager.deleteSubject('${subject.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            },
+
+            // تحميل بيانات الامتحانات
+            loadExamsData: async function() {
+                try {
+                    const examsSnapshot = await this.db.collection('exams').get();
+                    this.data.exams = examsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.displayExamsInTable(this.data.exams);
+                    this.showNotification('تم تحميل بيانات الامتحانات بنجاح', 'success');
+                } catch (error) {
+                    console.error('❌ خطأ في تحميل الامتحانات:', error);
+                    this.showNotification('حدث خطأ في تحميل بيانات الامتحانات', 'error');
+                }
+            },
+
+            // عرض الامتحانات في الجدول
+            displayExamsInTable: function(exams) {
+                const tbody = document.getElementById('examsDataTable').querySelector('tbody');
+                tbody.innerHTML = '';
+
+                if (exams.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="5" style="text-align: center;">لا توجد امتحانات مسجلة</td>`;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                exams.forEach(exam => {
+                    const examDate = exam.date ? new Date(exam.date).toLocaleDateString('ar-EG') : 'غير محدد';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${this.getUserName(exam.userId)}</td>
+                        <td>${exam.name || 'غير محدد'}</td>
+                        <td>${exam.subject || 'غير محدد'}</td>
+                        <td>${examDate}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="AdminManager.editExam('${exam.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="AdminManager.deleteExam('${exam.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            },
+
+            // تحميل السجلات
+            loadLogs: function() {
+                // بيانات وهمية للعرض
+                const logs = [
+                    { date: new Date().toLocaleString('ar-EG'), userName: 'مسؤول النظام', type: 'login', activity: 'تسجيل الدخول', ip: '192.168.1.1', details: 'الدخول إلى لوحة الإدارة' },
+                    { date: new Date(Date.now() - 3600000).toLocaleString('ar-EG'), userName: 'أحمد محمد', type: 'create', activity: 'إنشاء جدول', ip: '192.168.1.2', details: 'إنشاء جدول الأسبوع' },
+                    { date: new Date(Date.now() - 7200000).toLocaleString('ar-EG'), userName: 'فاطمة علي', type: 'update', activity: 'تحديث مهمة', ip: '192.168.1.3', details: 'تحديث حالة المهمة' }
+                ];
+
+                const tbody = document.getElementById('logsTable').querySelector('tbody');
+                tbody.innerHTML = '';
+
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${log.date}</td>
+                        <td>${log.userName}</td>
+                        <td>${log.type}</td>
+                        <td>${log.activity}</td>
+                        <td>${log.ip}</td>
+                        <td>${log.details}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                this.showNotification('تم تحميل السجلات بنجاح', 'success');
+            },
+
+            // إضافة مستخدم جديد
+            addUser: async function(userData) {
+                try {
+                    // إنشاء المستخدم في Authentication
+                    const userCredential = await this.auth.createUserWithEmailAndPassword(userData.email, userData.password);
+                    
+                    // حفظ بيانات المستخدم في Firestore
+                    await this.db.collection('users').doc(userCredential.user.uid).set({
+                        name: userData.name,
+                        email: userData.email,
+                        role: "user",
+                        isAdmin: false,
+                        grade: userData.grade,
+                        xp: userData.xp || 0,
+                        level: userData.level || 1,
+                        tasksCompleted: 0,
+                        subjectsCount: 0,
+                        examsCount: 0,
+                        joinDate: new Date().toISOString(),
+                        lastLogin: null,
+                        status: userData.status
+                    });
+                    
+                    this.showNotification('تم إضافة المستخدم بنجاح', 'success');
+                    this.refreshStats();
+                    this.loadUsers();
+                    closeModal('userModal');
+                } catch (error) {
+                    console.error('❌ خطأ في إضافة المستخدم:', error);
+                    this.showNotification('خطأ في إضافة المستخدم: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // تعديل مستخدم
+            editUser: async function(userId) {
+                try {
+                    const userDoc = await this.db.collection('users').doc(userId).get();
+                    if (!userDoc.exists) {
+                        this.showNotification('المستخدم غير موجود', 'error');
+                        return;
+                    }
+
+                    const userData = userDoc.data();
+                    document.getElementById('userId').value = userId;
+                    document.getElementById('userName').value = userData.name || '';
+                    document.getElementById('userEmail').value = userData.email || '';
+                    document.getElementById('userGrade').value = userData.grade || '';
+                    document.getElementById('userXP').value = userData.xp || 0;
+                    document.getElementById('userLevel').value = userData.level || 1;
+                    document.getElementById('userStatus').value = userData.status || 'active';
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('userModalTitle').textContent = 'تعديل بيانات المستخدم';
+                    
+                    openModal('userModal');
+                } catch (error) {
+                    console.error('❌ خطأ في تحميل بيانات المستخدم:', error);
+                    this.showNotification('حدث خطأ في تحميل بيانات المستخدم', 'error');
+                }
+            },
+
+            // حفظ بيانات المستخدم (إضافة/تعديل)
+            saveUser: async function() {
+                const userId = document.getElementById('userId').value;
+                const userData = {
+                    name: document.getElementById('userName').value,
+                    email: document.getElementById('userEmail').value,
+                    password: document.getElementById('userPassword').value,
+                    grade: document.getElementById('userGrade').value,
+                    xp: parseInt(document.getElementById('userXP').value) || 0,
+                    level: parseInt(document.getElementById('userLevel').value) || 1,
+                    status: document.getElementById('userStatus').value
+                };
+
+                if (!userData.name || !userData.email || !userData.grade) {
+                    this.showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    return;
+                }
+
+                if (userId) {
+                    // تعديل مستخدم موجود
+                    try {
+                        await this.db.collection('users').doc(userId).update({
+                            name: userData.name,
+                            email: userData.email,
+                            grade: userData.grade,
+                            xp: userData.xp,
+                            level: userData.level,
+                            status: userData.status
+                        });
+
+                        // إذا تم إدخال كلمة مرور جديدة، قم بتحديثها
+                        if (userData.password) {
+                            // في Firebase، لا يمكن تحديث كلمة المرور مباشرة من جانب العميل
+                            // ستحتاج إلى استخدام Cloud Functions لهذا الغرض
+                            this.showNotification('تم تحديث بيانات المستخدم، لكن كلمة المرور لم تتغير (تتطلب وظيفة سحابية)', 'warning');
+                        } else {
+                            this.showNotification('تم تحديث بيانات المستخدم بنجاح', 'success');
+                        }
+
+                        this.refreshStats();
+                        this.loadUsers();
+                        closeModal('userModal');
+                    } catch (error) {
+                        console.error('❌ خطأ في تحديث المستخدم:', error);
+                        this.showNotification('خطأ في تحديث المستخدم: ' + this.getErrorMessage(error), 'error');
+                    }
+                } else {
+                    // إضافة مستخدم جديد
+                    this.addUser(userData);
+                }
+            },
+
+            // حذف مستخدم
+            deleteUser: async function(userId) {
+                if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف جميع بياناته أيضاً.')) {
+                    return;
+                }
+
+                try {
+                    // حذف بيانات المستخدم من Firestore
+                    await this.db.collection('users').doc(userId).delete();
+                    
+                    // حذف بيانات المستخدم من المجموعات الأخرى
+                    await this.deleteUserData(userId);
+                    
+                    this.showNotification('تم حذف المستخدم بنجاح', 'success');
+                    this.refreshStats();
+                    this.loadUsers();
+                } catch (error) {
+                    console.error('❌ خطأ في حذف المستخدم:', error);
+                    this.showNotification('خطأ في حذف المستخدم: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // حذف بيانات المستخدم من جميع المجموعات
+            deleteUserData: async function(userId) {
+                try {
+                    // حذف مهام المستخدم
+                    const tasksSnapshot = await this.db.collection('tasks').where('userId', '==', userId).get();
+                    const taskDeletes = tasksSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(taskDeletes);
+
+                    // حذف مواد المستخدم
+                    const subjectsSnapshot = await this.db.collection('subjects').where('userId', '==', userId).get();
+                    const subjectDeletes = subjectsSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(subjectDeletes);
+
+                    // حذف امتحانات المستخدم
+                    const examsSnapshot = await this.db.collection('exams').where('userId', '==', userId).get();
+                    const examDeletes = examsSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(examDeletes);
+
+                    console.log(`✅ تم حذف جميع بيانات المستخدم ${userId}`);
+                } catch (error) {
+                    console.error('❌ خطأ في حذف بيانات المستخدم:', error);
+                }
+            },
+
+            // عرض كلمة مرور المستخدم
+            showUserPassword: async function(userId) {
+                try {
+                    const userDoc = await this.db.collection('users').doc(userId).get();
+                    if (!userDoc.exists) {
+                        this.showNotification('المستخدم غير موجود', 'error');
+                        return;
+                    }
+
+                    const userData = userDoc.data();
+                    document.getElementById('passwordUserEmail').value = userData.email;
+                    document.getElementById('passwordDisplay').value = '********'; // كلمة مرور وهمية للعرض
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('passwordModal').setAttribute('data-user-id', userId);
+                    
+                    openModal('passwordModal');
+                } catch (error) {
+                    console.error('❌ خطأ في تحميل بيانات المستخدم:', error);
+                    this.showNotification('حدث خطأ في تحميل بيانات المستخدم', 'error');
+                }
+            },
+
+            // تحديث كلمة مرور المستخدم
+            updateUserPassword: async function() {
+                const userId = document.getElementById('passwordModal').getAttribute('data-user-id');
+                const newPassword = document.getElementById('newPassword').value;
+
+                if (!newPassword) {
+                    this.showNotification('يرجى إدخال كلمة مرور جديدة', 'error');
+                    return;
+                }
+
+                if (newPassword.length < 6) {
+                    this.showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error');
+                    return;
+                }
+
+                try {
+                    // في Firebase، لا يمكن تحديث كلمة مرور مستخدم آخر مباشرة من جانب العميل
+                    // ستحتاج إلى استخدام Cloud Functions لهذا الغرض
+                    this.showNotification('تحديث كلمة المرور يتطلب وظيفة سحابية (Cloud Function)', 'warning');
+                    
+                    // هذا مثال لكيفية تنفيذ ذلك باستخدام Cloud Functions:
+                    // await this.db.collection('adminActions').add({
+                    //     type: 'updatePassword',
+                    //     userId: userId,
+                    //     newPassword: newPassword,
+                    //     timestamp: new Date()
+                    // });
+                    
+                    // this.showNotification('تم إرسال طلب تحديث كلمة المرور', 'success');
+                    // closeModal('passwordModal');
+                } catch (error) {
+                    console.error('❌ خطأ في تحديث كلمة المرور:', error);
+                    this.showNotification('خطأ في تحديث كلمة المرور: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // تعديل مهمة
+            editTask: function(taskId) {
+                this.showNotification('تعديل المهمة - هذه الميزة قيد التطوير', 'warning');
+            },
+
+            // حذف مهمة
+            deleteTask: async function(taskId) {
+                if (!confirm('هل أنت متأكد من حذف هذه المهمة؟')) {
+                    return;
+                }
+
+                try {
+                    await this.db.collection('tasks').doc(taskId).delete();
+                    this.showNotification('تم حذف المهمة بنجاح', 'success');
+                    this.loadTasksData();
+                } catch (error) {
+                    console.error('❌ خطأ في حذف المهمة:', error);
+                    this.showNotification('خطأ في حذف المهمة: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // تعديل مادة
+            editSubject: function(subjectId) {
+                this.showNotification('تعديل المادة - هذه الميزة قيد التطوير', 'warning');
+            },
+
+            // حذف مادة
+            deleteSubject: async function(subjectId) {
+                if (!confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+                    return;
+                }
+
+                try {
+                    await this.db.collection('subjects').doc(subjectId).delete();
+                    this.showNotification('تم حذف المادة بنجاح', 'success');
+                    this.loadSubjectsData();
+                } catch (error) {
+                    console.error('❌ خطأ في حذف المادة:', error);
+                    this.showNotification('خطأ في حذف المادة: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // تعديل امتحان
+            editExam: function(examId) {
+                this.showNotification('تعديل الامتحان - هذه الميزة قيد التطوير', 'warning');
+            },
+
+            // حذف امتحان
+            deleteExam: async function(examId) {
+                if (!confirm('هل أنت متأكد من حذف هذا الامتحان؟')) {
+                    return;
+                }
+
+                try {
+                    await this.db.collection('exams').doc(examId).delete();
+                    this.showNotification('تم حذف الامتحان بنجاح', 'success');
+                    this.loadExamsData();
+                } catch (error) {
+                    console.error('❌ خطأ في حذف الامتحان:', error);
+                    this.showNotification('خطأ في حذف الامتحان: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // مسح جميع البيانات
+            clearAllData: async function() {
+                if (!confirm('هل أنت متأكد من مسح جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+                    return;
+                }
+
+                try {
+                    // حذف جميع المهام
+                    const tasksSnapshot = await this.db.collection('tasks').get();
+                    const taskDeletes = tasksSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(taskDeletes);
+
+                    // حذف جميع المواد
+                    const subjectsSnapshot = await this.db.collection('subjects').get();
+                    const subjectDeletes = subjectsSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(subjectDeletes);
+
+                    // حذف جميع الامتحانات
+                    const examsSnapshot = await this.db.collection('exams').get();
+                    const examDeletes = examsSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(examDeletes);
+
+                    this.showNotification('تم مسح جميع البيانات بنجاح', 'success');
+                    this.refreshStats();
+                    this.loadTasksData();
+                    this.loadSubjectsData();
+                    this.loadExamsData();
+                } catch (error) {
+                    console.error('❌ خطأ في مسح البيانات:', error);
+                    this.showNotification('خطأ في مسح البيانات: ' + this.getErrorMessage(error), 'error');
+                }
+            },
+
+            // دوال مساعدة
+            getGradeText: function(grade) {
+                const grades = {
+                    'grade1': 'الصف الأول الابتدائي',
+                    'grade2': 'الصف الثاني الابتدائي',
+                    'grade3': 'الصف الثالث الابتدائي',
+                    'grade4': 'الصف الرابع الابتدائي',
+                    'grade5': 'الصف الخامس الابتدائي',
+                    'grade6': 'الصف السادس الابتدائي',
+                    'grade7': 'الصف الأول الإعدادي',
+                    'grade8': 'الصف الثاني الإعدادي',
+                    'grade9': 'الصف الثالث الإعدادي',
+                    'grade10': 'الصف الأول الثانوي',
+                    'grade11': 'الصف الثاني الثانوي',
+                    'grade12': 'الصف الثالث الثانوي',
+                    'uni1': 'السنة الأولى جامعة',
+                    'uni2': 'السنة الثانية جامعة',
+                    'uni3': 'السنة الثالثة جامعة',
+                    'uni4': 'السنة الرابعة جامعة',
+                    'admin': 'مسؤول النظام'
+                };
+                return grades[grade] || 'غير محدد';
+            },
+
+            getStatusClass: function(status) {
+                const statusClasses = {
+                    'active': 'status-active',
+                    'inactive': 'status-inactive',
+                    'banned': 'status-banned'
+                };
+                return statusClasses[status] || 'status-inactive';
+            },
+
+            getStatusText: function(status) {
+                const statusTexts = {
+                    'active': 'نشط',
+                    'inactive': 'غير نشط',
+                    'banned': 'محظور'
+                };
+                return statusTexts[status] || 'غير معروف';
+            },
+
+            getUserName: function(userId) {
+                const user = this.data.users.find(u => u.id === userId);
+                return user ? user.name : 'مستخدم غير معروف';
+            },
+
+            getErrorMessage: function(error) {
+                const errorMessages = {
+                    'auth/invalid-email': 'البريد الإلكتروني غير صحيح',
+                    'auth/user-disabled': 'هذا الحساب معطل',
+                    'auth/user-not-found': 'الحساب غير موجود',
+                    'auth/wrong-password': 'كلمة المرور غير صحيحة',
+                    'auth/email-already-in-use': 'البريد الإلكتروني مستخدم بالفعل',
+                    'auth/weak-password': 'كلمة المرور ضعيفة جداً',
+                    'auth/network-request-failed': 'خطأ في الاتصال بالشبكة',
+                    'permission-denied': 'ليس لديك صلاحية للوصول إلى هذه البيانات'
+                };
+                return errorMessages[error.code] || error.message || 'حدث خطأ غير متوقع';
+            },
+
+            // عرض لوحة الإدارة
+            showAdminPanel: function() {
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'block';
+                document.getElementById('adminUserName').textContent = this.data.currentAdmin?.email || 'مسؤول النظام';
+            },
+
+            // تسجيل الخروج
+            logout: function() {
+                this.auth.signOut().then(() => {
+                    this.data.currentAdmin = null;
+                    document.getElementById('adminContainer').style.display = 'none';
+                    document.getElementById('authContainer').style.display = 'flex';
+                    this.showNotification('تم تسجيل الخروج بنجاح', 'success');
+                }).catch(error => {
+                    this.showNotification('خطأ في تسجيل الخروج: ' + error.message, 'error');
+                });
+            },
+
+            // إشعارات
+            showNotification: function(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'}"></i>
+                    ${message}
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideInRight 0.3s ease reverse';
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
+                }, 4000);
+            },
+
+            // دوال الواجهة
+            switchSection: function(sectionId) {
+                document.querySelectorAll('.admin-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.querySelectorAll('.admin-nav-links a').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                document.getElementById(sectionId).classList.add('active');
+                document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+                
+                // تحميل بيانات القسم إذا لزم الأمر
+                if (sectionId === 'users') {
+                    this.loadUsers();
+                } else if (sectionId === 'data') {
+                    this.loadTasksData();
+                    this.loadSubjectsData();
+                    this.loadExamsData();
+                } else if (sectionId === 'logs') {
+                    this.loadLogs();
+                }
+            },
+
+            // دوال الميزات (تجريبية)
+            openAddUserModal: function() {
+                document.getElementById('userId').value = '';
+                document.getElementById('userName').value = '';
+                document.getElementById('userEmail').value = '';
+                document.getElementById('userPassword').value = '';
+                document.getElementById('userPassword').required = true;
+                document.getElementById('userGrade').value = '';
+                document.getElementById('userXP').value = '0';
+                document.getElementById('userLevel').value = '1';
+                document.getElementById('userStatus').value = 'active';
+                document.getElementById('userModalTitle').textContent = 'إضافة مستخدم جديد';
+                
+                openModal('userModal');
+            },
+
+            clearOldLogs: function() {
+                this.showNotification('تم مسح السجلات القديمة', 'success');
+            },
+
+            saveSettings: function() {
+                this.showNotification('تم حفظ الإعدادات بنجاح', 'success');
+            },
+
+            openBackupModal: function() {
+                this.showNotification('نافذة النسخ الاحتياطي', 'info');
+            },
+
+            createBackup: function() {
+                this.showNotification('جاري إنشاء النسخة الاحتياطية', 'warning');
+            },
+
+            exportAllData: function() {
+                this.showNotification('جاري تصدير البيانات', 'warning');
+            }
+        };
+
+        // دوال عامة
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('adminTheme', newTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('adminTheme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.parentNode.querySelector('.toggle-password i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // إعداد التطبيق
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            
+            // تهيئة Firebase
+            AdminManager.initFirebase();
+            
+            // إعداد نموذج تسجيل الدخول
+            document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const email = document.getElementById('adminEmail').value;
+                const password = document.getElementById('adminPassword').value;
+                await AdminManager.login(email, password);
+            });
+            
+            // إعداد نموذج إضافة/تعديل المستخدم
+            document.getElementById('userForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                AdminManager.saveUser();
+            });
+            
+            // التنقل بين الأقسام
+            document.querySelectorAll('.admin-nav-links a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    AdminManager.switchSection(sectionId);
+                });
+            });
+            
+            // التحقق من حالة تسجيل الدخول الحالية
+            if (AdminManager.initialized && AdminManager.auth) {
+                AdminManager.auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        AdminManager.data.currentAdmin = user;
+                        AdminManager.showAdminPanel();
+                        AdminManager.loadAdminData();
+                    }
+                });
+            }
+            
+            console.log("🚀 لوحة إدارة Easy TimeTable جاهزة!");
+            console.log("📧 البريد الإلكتروني: admin@easytimetable.com");
+            console.log("🔑 كلمة المرور: Admin123!");
+        });
+
+        // جعل الدوال متاحة عالمياً
+        window.adminLogout = () => AdminManager.logout();
+        window.refreshStats = () => AdminManager.refreshStats();
+        window.switchSection = (sectionId) => AdminManager.switchSection(sectionId);
+        window.openAddUserModal = () => AdminManager.openAddUserModal();
+        window.loadUsers = () => AdminManager.loadUsers();
+        window.loadTasksData = () => AdminManager.loadTasksData();
+        window.loadSubjectsData = () => AdminManager.loadSubjectsData();
+        window.loadExamsData = () => AdminManager.loadExamsData();
+        window.loadLogs = () => AdminManager.loadLogs();
+        window.clearOldLogs = () => AdminManager.clearOldLogs();
+        window.saveSettings = () => AdminManager.saveSettings();
+        window.openBackupModal = () => AdminManager.openBackupModal();
+        window.createBackup = () => AdminManager.createBackup();
+        window.exportAllData = () => AdminManager.exportAllData();
+        window.clearAllData = () => AdminManager.clearAllData();
+        window.updateUserPassword = () => AdminManager.updateUserPassword();
+        window.toggleTheme = toggleTheme;
+        window.closeModal = closeModal;
+        window.openModal = openModal;
+        window.togglePasswordVisibility = togglePasswordVisibility;
+    </script>
+</body>
+</html>
